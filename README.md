@@ -13,6 +13,7 @@
 dotnet new sln -n Preacher # Criar Solution
 dotnet new xunit -n Preacher.UnitTests # Criar Camada de testes unitários
 dotnet new gitignore # Criar .gitignore
+dotnet sln add **/*.csproj
 ```
 ### Commandos GIT
 ``` sh
