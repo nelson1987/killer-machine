@@ -2,41 +2,13 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace MangaBank.UnitTests
+namespace MangaBank.UnitTests.Helpers
 {
-    public class Contexto : DbContext
+    using MangaBank.Infra.Persistence;
+
+    [CollectionDefinition("Integration Tests")]
+    public class IntegrationTestCollection : ICollectionFixture<DatabaseIntegrationTest>
     {
-        public Contexto(DbContextOptions<Contexto> options) : base(options)
-        {
-        }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Projeto>(e =>
-            {
-                e
-                .ToTable("TB_PROJETO")
-                .HasKey(k => k.Id);
-
-                e
-                .Property(p => p.Id)
-                .ValueGeneratedOnAdd();
-
-                e
-                .Property(p => p.Id)
-                .HasColumnName("IDT_PROJETO");
-
-                e
-                .Property(p => p.Nome)
-                .HasColumnName("NOM_PROJETO")
-                .IsRequired();
-            });
-        }
-
-        public async Task CommitAsync()
-        {
-            throw new NotImplementedException();
-        }
     }
 
     public class DatabaseIntegrationTest
@@ -51,26 +23,36 @@ namespace MangaBank.UnitTests
         }
     }
 
-    public class Projeto
+    public abstract class TestBase : IAsyncLifetime
     {
-        public Projeto(int id, string nome)
+        private readonly DatabaseIntegrationTest _server;
+        protected Contexto _ctx;
+
+        public TestBase(DatabaseIntegrationTest server)
         {
-            if (id < 0) throw new ArgumentNullException("id");
-            if (string.IsNullOrWhiteSpace(nome)) throw new ArgumentNullException("nome");
-            Id = id;
-            Nome = nome;
+            _server = server;
+            _ctx = server.GetInMemoryDBContext();
         }
 
-        //CRUD - Projeto
-        public int Id { get; set; }
-
-        public string Nome { get; set; }
-
-        internal void AlterarNome(string nome)
+        public async Task InitializeAsync()
         {
-            Nome = nome;
+            await _ctx.Database.EnsureCreatedAsync();
+            await _ctx.Database.MigrateAsync();
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _ctx.Database.EnsureDeletedAsync();
         }
     }
+}
+
+namespace MangaBank.UnitTests
+{
+    using MangaBank.UnitTests.Helpers;
+    using MangaBank.Application.UseCases.CriarProjeto;
+    using MangaBank.Entities;
+    using MangaBank.Infra.Repositories;
 
     public class ProjetoUnitTests
     {
@@ -106,6 +88,45 @@ namespace MangaBank.UnitTests
             var projeto = new Projeto(0, "PBI 1");
             projeto.AlterarNome("PBI 2");
             projeto.Nome.Should().Be("PBI 2");
+        }
+    }
+
+    public class CriarProjetoCommandUnitTests
+    {
+        private readonly CriarProjetoCommand _sut;
+
+        public CriarProjetoCommandUnitTests()
+        {
+            _sut = new CriarProjetoCommand("Nome");
+        }
+
+        [Fact]
+        public async Task Validate_QuandoNomeVazio_RetornaProblema()
+        {
+            var comando = _sut with { Nome = "" };
+
+            bool resultado = true;
+            resultado.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task Validate_QuandoNomeNulo_RetornaProblema()
+        {
+            var comando = _sut with { Nome = null };
+
+            bool resultado = true;
+            resultado.Should().BeFalse();
+        }
+    }
+
+    [Collection("Integration Tests")]
+    public class EnderecoUnitTests
+    {
+        [Fact]
+        public async Task CriarEndereco()
+        {
+            var projeto = new Endereco("Avenida Brasil");
+            projeto.Logradouro.Should().Be("Avenida Brasil");
         }
     }
 
@@ -171,56 +192,6 @@ namespace MangaBank.UnitTests
         }
     }
 
-    public class ProjetoRepository
-    {
-        private readonly Contexto _contexto;
-
-        public ProjetoRepository(Contexto ctx)
-        {
-            _contexto = ctx;
-        }
-
-        public async Task AdicionarAsync(Projeto projeto)
-        {
-            await _contexto.AddAsync(projeto);
-            await _contexto.SaveChangesAsync();
-        }
-
-        public async Task AlterarAsync(Projeto projeto)
-        {
-            _contexto.Update(projeto);
-            await _contexto.SaveChangesAsync();
-        }
-    }
-
-    [CollectionDefinition("Integration Tests")]
-    public class IntegrationTestCollection : ICollectionFixture<DatabaseIntegrationTest>
-    {
-    }
-
-    public abstract class TestBase : IAsyncLifetime
-    {
-        private readonly DatabaseIntegrationTest _server;
-        protected Contexto _ctx;
-
-        public TestBase(DatabaseIntegrationTest server)
-        {
-            _server = server;
-            _ctx = server.GetInMemoryDBContext();
-        }
-
-        public async Task InitializeAsync()
-        {
-            await _ctx.Database.EnsureCreatedAsync();
-            await _ctx.Database.MigrateAsync();
-        }
-
-        public async Task DisposeAsync()
-        {
-            await _ctx.Database.EnsureDeletedAsync();
-        }
-    }
-
     [Collection("Integration Tests")]
     public class ProjetoRepositoryUnitTests : TestBase
     {
@@ -258,23 +229,6 @@ namespace MangaBank.UnitTests
         }
     }
 
-    public class CriarProjetoHandler
-    {
-        private readonly ProjetoRepository _projetoRepository;
-
-        public CriarProjetoHandler(ProjetoRepository projetoRepository)
-        {
-            _projetoRepository = projetoRepository;
-        }
-
-        public async Task<Projeto> Handle(CriarProjetoCommand command)
-        {
-            var projeto = command.ToEntity();
-            await _projetoRepository.AdicionarAsync(projeto);
-            return projeto;
-        }
-    }
-
     [Collection("Integration Tests")]
     public class CriarProjetoHandlerUnitTests : TestBase
     {
@@ -297,40 +251,137 @@ namespace MangaBank.UnitTests
             result.Nome.Should().Be("João Silva");
         }
     }
+}
+
+namespace MangaBank.Infra.Persistence
+{
+    using MangaBank.Entities;
+
+    public class Contexto : DbContext
+    {
+        public Contexto(DbContextOptions<Contexto> options) : base(options)
+        {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Projeto>(e =>
+            {
+                e
+                .ToTable("TB_PROJETO")
+                .HasKey(k => k.Id);
+
+                e
+                .Property(p => p.Id)
+                .ValueGeneratedOnAdd();
+
+                e
+                .Property(p => p.Id)
+                .HasColumnName("IDT_PROJETO");
+
+                e
+                .Property(p => p.Nome)
+                .HasColumnName("NOM_PROJETO")
+                .IsRequired();
+            });
+        }
+
+        public async Task CommitAsync()
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
+
+namespace MangaBank.Entities
+{
+    public class Projeto
+    {
+        public Projeto(int id, string nome)
+        {
+            if (id < 0) throw new ArgumentException("id");
+            if (string.IsNullOrWhiteSpace(nome)) throw new ArgumentException("nome");
+            Id = id;
+            Nome = nome;
+        }
+
+        //CRUD - Projeto
+        public int Id { get; set; }
+
+        public string Nome { get; set; }
+
+        internal void AlterarNome(string nome)
+        {
+            Nome = nome;
+        }
+    }
+
+    public class Endereco
+    {
+        public Endereco(string logradouro)
+        {
+            Logradouro = logradouro;
+        }
+
+        public string Logradouro { get; private set; }
+    }
+}
+
+namespace MangaBank.Infra.Repositories
+{
+    using MangaBank.Infra.Persistence;
+    using MangaBank.Entities;
+
+    public class ProjetoRepository
+    {
+        private readonly Contexto _contexto;
+
+        public ProjetoRepository(Contexto ctx)
+        {
+            _contexto = ctx;
+        }
+
+        public async Task AdicionarAsync(Projeto projeto)
+        {
+            await _contexto.AddAsync(projeto);
+            await _contexto.SaveChangesAsync();
+        }
+
+        public async Task AlterarAsync(Projeto projeto)
+        {
+            _contexto.Update(projeto);
+            await _contexto.SaveChangesAsync();
+        }
+    }
+}
+
+namespace MangaBank.Application.UseCases.CriarProjeto
+{
+    using MangaBank.Entities;
+    using MangaBank.Infra.Repositories;
+
+    public class CriarProjetoHandler
+    {
+        private readonly ProjetoRepository _projetoRepository;
+
+        public CriarProjetoHandler(ProjetoRepository projetoRepository)
+        {
+            _projetoRepository = projetoRepository;
+        }
+
+        public async Task<Projeto> Handle(CriarProjetoCommand command)
+        {
+            var projeto = command.ToEntity();
+            await _projetoRepository.AdicionarAsync(projeto);
+            return projeto;
+        }
+    }
 
     public record CriarProjetoCommand(string Nome)
     {
         public Projeto ToEntity()
         {
             return new Projeto(0, Nome);
-        }
-    }
-
-    public class CriarProjetoCommandUnitTests
-    {
-        private readonly CriarProjetoCommand _sut;
-
-        public CriarProjetoCommandUnitTests()
-        {
-            _sut = new CriarProjetoCommand("Nome");
-        }
-
-        [Fact]
-        public async Task Validate_QuandoNomeVazio_RetornaProblema()
-        {
-            var comando = _sut with { Nome = "" };
-
-            bool resultado = true;
-            resultado.Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task Validate_QuandoNomeNulo_RetornaProblema()
-        {
-            var comando = _sut with { Nome = null };
-
-            bool resultado = true;
-            resultado.Should().BeFalse();
         }
     }
 }

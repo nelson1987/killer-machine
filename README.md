@@ -13,6 +13,7 @@
 dotnet new sln -n Preacher # Criar Solution
 dotnet new xunit -n Preacher.UnitTests # Criar Camada de testes unitários
 dotnet new gitignore # Criar .gitignore
+ls -la
 dotnet sln add **/*.csproj
 ```
 ### Commandos GIT
@@ -29,28 +30,28 @@ git rebase -i [id do commit] # Rebase
 ### Extensão do VSCode
 #### Visual Studio Keymap
  
-# Teste Unitários
+### Teste Unitários
 
-## Criar Entidade Utilizando Setter Privado e com Construtor
-## Criar Teste Unitário de Entidade
+#### Criar Entidade Utilizando Setter Privado e com Construtor
+#### Criar Teste Unitário de Entidade
 
-## Criar Contexto
-## Criar Teste Unitário de Contexto(DbSet<Entidade>) da Entidade
+#### Criar Contexto
+#### Criar Teste Unitário de Contexto(DbSet<Entidade>) da Entidade
 
-## Criar DomainEvent
-## Criar Teste Unitário de DomainEvent
+#### Criar DomainEvent
+#### Criar Teste Unitário de DomainEvent
 
-## Criar Repository
-## Criar Teste Unitário de Repository
+#### Criar Repository
+#### Criar Teste Unitário de Repository
 
-## Criar Handler
-## Criar Teste Unitário do Handler
+#### Criar Handler
+#### Criar Teste Unitário do Handler
 
-## Criar Command
-## Criar Teste Unitário do Command
+#### Criar Command
+#### Criar Teste Unitário do Command
 
-## Criar Response
-## Criar Teste Unitário do Response
+#### Criar Response
+#### Criar Teste Unitário do Response
 
-## Criar Validator
-## Criar Teste Unitário do Validator
+#### Criar Validator
+#### Criar Teste Unitário do Validator
