@@ -1,0 +1,6 @@
+@Presentation_HostAddress = http://localhost:5024
+
+GET {{Presentation_HostAddress}}/api/TodoItems/
+Accept: application/json
+
+###
