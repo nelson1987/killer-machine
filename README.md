@@ -1,4 +1,6 @@
 # killer-machine
+### https://www.youtube.com/watch?v=9bEMrFIt-aY&ab_channel=BrunoBrito
+
 ## Curso de Arquitetura utilizando: TDD + DDD + CQRS
 
 ### Conhecendo TDD
