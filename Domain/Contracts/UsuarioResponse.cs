@@ -1,4 +1,4 @@
-﻿using Domain.Services;
+﻿using Domain.Common;
 
 namespace Domain.Contracts
 {
