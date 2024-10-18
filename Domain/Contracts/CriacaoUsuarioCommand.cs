@@ -1,4 +1,4 @@
 ﻿namespace Domain.Contracts
 {
-    public record CriacaoUsuarioCommand(string Nome);
+    public record CriacaoProjetoRequest(string Nome);
 }

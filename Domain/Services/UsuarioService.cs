@@ -6,12 +6,12 @@ using Domain.Repositories;
 
 namespace Domain.Services
 {
-    public interface IUsuarioService
+    public interface IProjetoService
     {
-        Task<Result<UsuarioResponse>> AdicionarAsync(CriacaoUsuarioCommand command);
+        Task<Result<UsuarioResponse>> AdicionarAsync(CriacaoProjetoRequest command);
     }
 
-    public class UsuarioService : ServiceBase, IUsuarioService
+    public class UsuarioService : ServiceBase, IProjetoService
     {
         private readonly IUsuarioRepository _repositorio;
 
@@ -31,7 +31,7 @@ namespace Domain.Services
             return Result<UsuarioResponse>.Success(new UsuarioResponse(0, "usuario.Nome"));
         }
 
-        public async Task<Result<UsuarioResponse>> AdicionarAsync(CriacaoUsuarioCommand command)
+        public async Task<Result<UsuarioResponse>> AdicionarAsync(CriacaoProjetoRequest command)
         {
             if (string.IsNullOrEmpty(command.Nome))
                 return await ValidarCampo(nameof(command.Nome), string.Format(Mensagens.O_CAMPO_X0_NAO_INFORMADO, nameof(command.Nome)));

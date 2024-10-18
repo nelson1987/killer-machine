@@ -7,16 +7,16 @@ public record CriacaoProjetoCommand(string Nome) : ICommand;
 
 public class CriacaoProjetoHandler : ICommandHandler<CriacaoProjetoCommand>
 {
-    private readonly IUsuarioService _usuarioService;
+    private readonly IProjetoService _usuarioService;
 
-    public CriacaoProjetoHandler(IUsuarioService usuarioService)
+    public CriacaoProjetoHandler(IProjetoService usuarioService)
     {
         _usuarioService = usuarioService;
     }
 
     public async Task Handle(CriacaoProjetoCommand command, CancellationToken cancellationToken)
     {
-        CriacaoUsuarioCommand usuario = new CriacaoUsuarioCommand(command.Nome);
+        CriacaoProjetoRequest usuario = new CriacaoProjetoRequest(command.Nome);
         await _usuarioService.AdicionarAsync(usuario);
     }
 }
